@@ -1,0 +1,377 @@
+<?php
+// sidebar.php
+$currentPage = basename($_SERVER['PHP_SELF']);
+
+// Helper function to check if user can view a module
+function canView($module) {
+    // Admin and Dev see everything in the sidebar
+    if (isset($_SESSION['role_name']) && in_array($_SESSION['role_name'], ['Administrator', 'Dev'])) {
+        return true;
+    }
+    
+    // For other roles, check database
+    $result = hasPermission($module, 'view');
+    
+    // DEBUG: Uncomment this to see what's happening
+    // if ($_SESSION['username'] == 'daniel') {
+    //     error_log("canView($module) = " . ($result ? 'YES' : 'NO'));
+    // }
+    
+    return $result;
+}
+
+// Helper function to check if a section has any visible links
+function hasVisibleLinks($links) {
+    foreach ($links as $link) {
+        if (canView($link)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// DEBUG: Check what permissions Daniel has
+if ($_SESSION['username'] == 'daniel') {
+    // Force a permission check to see what's happening
+    $debug_modules = ['Dashboard', 'Quantity Survey'];
+    foreach ($debug_modules as $mod) {
+        $result = hasPermission($mod, 'view');
+        // This will show in the HTML source if you view page source
+        echo "<!-- Daniel: $mod = " . ($result ? 'YES' : 'NO') . " -->\n";
+    }
+}
+?>
+<style>
+:root {
+    --green: #1f8b4c;
+    --light-green: #d4edda;
+    --sidebar-bg: #ffffff;
+    --sidebar-text: #1e2a2f;
+    --sidebar-hover: #f1f5f9;
+    --sidebar-active: #1f8b4c;
+    --sidebar-active-bg: #e6f5ea;
+    --sidebar-border: #e5e7eb;
+}
+
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 270px;
+    height: 100vh;
+    background: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    overflow-y: auto;
+    transition: .35s;
+    z-index: 999;
+    box-shadow: 2px 0 12px rgba(0,0,0,0.06);
+    border-right: 1px solid var(--sidebar-border);
+}
+
+.sidebar::-webkit-scrollbar {
+    width: 4px;
+}
+.sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.sidebar::-webkit-scrollbar-thumb {
+    background: var(--light-green);
+    border-radius: 4px;
+}
+
+.logo {
+    height: 75px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    border-bottom: 1px solid var(--sidebar-border);
+    padding: 0 15px;
+}
+
+.logo img {
+    height: 45px;
+    width: auto;
+    display: block;
+}
+
+.logo h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--sidebar-text);
+    margin: 0;
+    letter-spacing: -0.5px;
+}
+
+.menu {
+    margin-top: 16px;
+    padding-bottom: 80px;
+}
+
+.menu a {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    text-decoration: none;
+    color: var(--sidebar-text);
+    padding: 13px 24px;
+    margin: 2px 12px;
+    border-radius: 10px;
+    transition: .2s;
+    font-size: 15px;
+    font-weight: 500;
+}
+
+.menu a i {
+    width: 22px;
+    font-size: 17px;
+    text-align: center;
+    color: #64748b;
+    transition: .2s;
+}
+
+.menu a:hover {
+    background: var(--sidebar-hover);
+    color: var(--sidebar-text);
+}
+
+.menu a:hover i {
+    color: var(--sidebar-text);
+}
+
+/* Active link – using your brand green */
+.menu a.active {
+    background: var(--sidebar-active-bg);
+    color: var(--sidebar-active);
+    font-weight: 600;
+}
+
+.menu a.active i {
+    color: var(--sidebar-active);
+}
+
+.menu-title {
+    color: #94a3b8;
+    padding: 20px 28px 8px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 600;
+}
+
+.bottom {
+    position: absolute;
+    bottom: 20px;
+    left: 15px;
+    right: 15px;
+}
+
+.logout {
+    color: #dc2626 !important;
+    font-weight: 600 !important;
+}
+
+.logout i {
+    color: #dc2626 !important;
+}
+
+.logout:hover {
+    background: #fef2f2 !important;
+}
+
+.overlay {
+    display: none;
+}
+
+@media (max-width: 991px) {
+    .sidebar {
+        left: -270px;
+    }
+    .sidebar.show {
+        left: 0;
+    }
+    .overlay {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.35);
+        opacity: 0;
+        visibility: hidden;
+        transition: .3s;
+        z-index: 998;
+    }
+    .overlay.show {
+        opacity: 1;
+        visibility: visible;
+    }
+}
+</style>
+
+<div class="overlay" id="overlay"></div>
+
+<aside class="sidebar" id="sidebar">
+    <div class="logo">
+        <img src="logo.png" alt="Enginove">
+    </div>
+
+    <div class="menu">
+        <?php if (hasVisibleLinks(['Dashboard', 'Tender Management', 'Purchase Orders', 'Procurement'])): ?>
+        <div class="menu-title">MAIN</div>
+        <?php endif; ?>
+        
+        <?php if (canView('Dashboard')): ?>
+        <a href="index.php" class="<?= ($currentPage == "index.php") ? "active" : ""; ?>">
+            <i class="fas fa-house"></i> Dashboard
+        </a>
+        <?php endif; ?>
+        
+        <?php if (canView('Tender Management')): ?>
+        <a href="tenders.php" class="<?= ($currentPage == "tenders.php") ? "active" : ""; ?>">
+            <i class="fas fa-file-signature"></i> Tenders
+        </a>
+        <?php endif; ?>
+        
+        <?php if (canView('Purchase Orders')): ?>
+        <a href="purchase_orders.php" class="<?= ($currentPage == "purchase_orders.php") ? "active" : ""; ?>">
+            <i class="fas fa-shopping-cart"></i> Purchase Orders
+        </a>
+        <?php endif; ?>
+        
+        <?php if (canView('Procurement')): ?>
+        <a href="procurement.php" class="<?= ($currentPage == "procurement.php") ? "active" : ""; ?>">
+            <i class="fas fa-boxes"></i> Procurement
+        </a>
+        <?php endif; ?>
+
+        <?php if (hasVisibleLinks(['Suppliers', 'Artisans'])): ?>
+        <div class="menu-title">RESOURCES</div>
+        <?php endif; ?>
+        
+        <?php if (canView('Suppliers')): ?>
+        <a href="suppliers.php" class="<?= ($currentPage == "suppliers.php") ? "active" : ""; ?>">
+            <i class="fas fa-truck"></i> Suppliers
+        </a>
+        <?php endif; ?>
+        
+        <?php if (canView('Artisans')): ?>
+        <a href="artisans.php" class="<?= ($currentPage == "artisans.php") ? "active" : ""; ?>">
+            <i class="fas fa-screwdriver-wrench"></i> Artisans
+        </a>
+        <?php endif; ?>
+
+        <?php if (hasVisibleLinks(['Expense Capture', 'Memos', 'Checklist'])): ?>
+        <div class="menu-title">FINANCE & ADMIN</div>
+        <?php endif; ?>
+        
+        <?php if (canView('Expense Capture')): ?>
+        <a href="expenses.php" class="<?= ($currentPage == "expenses.php") ? "active" : ""; ?>">
+            <i class="fas fa-coins"></i> Expense Capture
+        </a>
+        <?php endif; ?>
+        
+        <?php if (canView('Memos')): ?>
+        <a href="memos.php" class="<?= ($currentPage == "memos.php") ? "active" : ""; ?>">
+            <i class="fas fa-envelope"></i> Memos
+        </a>
+        <?php endif; ?>
+        
+        <?php if (canView('Checklist')): ?>
+        <a href="checklists.php" class="<?= ($currentPage == "checklists.php") ? "active" : ""; ?>">
+            <i class="fas fa-clipboard-check"></i> Checklists
+        </a>
+        <?php endif; ?>
+
+        <?php if (hasVisibleLinks(['Quantity Survey', 'Engineering', 'Stores'])): ?>
+        <div class="menu-title">DEPARTMENTS</div>
+        <?php endif; ?>
+        
+        <?php if (canView('Quantity Survey')): ?>
+        <a href="quantity_survey.php" class="<?= ($currentPage == "quantity_survey.php") ? "active" : ""; ?>">
+            <i class="fas fa-ruler-combined"></i> Quantity Survey
+        </a>
+        <?php endif; ?>
+        
+        <?php if (canView('Engineering')): ?>
+        <a href="engineering.php" class="<?= ($currentPage == "engineering.php") ? "active" : ""; ?>">
+            <i class="fas fa-gears"></i> Engineering
+        </a>
+        <?php endif; ?>
+        
+        <?php if (canView('Stores')): ?>
+        <a href="stores.php" class="<?= ($currentPage == "stores.php") ? "active" : ""; ?>">
+            <i class="fas fa-warehouse"></i> Stores
+        </a>
+        <?php endif; ?>
+
+        <?php if (hasVisibleLinks(['Todo', 'Reports'])): ?>
+        <div class="menu-title">PRODUCTIVITY</div>
+        <?php endif; ?>
+        
+        <?php if (canView('Todo')): ?>
+        <a href="todos.php" class="<?= ($currentPage == "todos.php") ? "active" : ""; ?>">
+            <i class="fas fa-list-check"></i> Todos
+        </a>
+        <?php endif; ?>
+        
+        <?php if (canView('Reports')): ?>
+        <a href="reports.php" class="<?= ($currentPage == "reports.php") ? "active" : ""; ?>">
+            <i class="fas fa-chart-line"></i> Reports
+        </a>
+        <?php endif; ?>
+
+        <?php if (hasVisibleLinks(['Users']) || canAccessSettings() || canAccessRoleManagement()): ?>
+        <div class="menu-title">SYSTEM</div>
+        <?php endif; ?>
+        
+        <?php if (canView('Users')): ?>
+        <a href="users.php" class="<?= ($currentPage == "users.php") ? "active" : ""; ?>">
+            <i class="fas fa-users"></i> Users
+        </a>
+        <?php endif; ?>
+        
+        <?php if (canAccessRoleManagement()): ?>
+        <a href="settings.php?tab=roles" class="<?= ($currentPage == "settings.php" && isset($_GET['tab']) && $_GET['tab'] == 'roles') ? "active" : ""; ?>">
+            <i class="fas fa-user-cog"></i> Role Management
+        </a>
+        <?php endif; ?>
+        
+        <?php if (canAccessSettings()): ?>
+        <a href="settings.php" class="<?= ($currentPage == "settings.php" && (!isset($_GET['tab']) || $_GET['tab'] != 'roles')) ? "active" : ""; ?>">
+            <i class="fas fa-gear"></i> Settings
+        </a>
+        <?php endif; ?>
+
+        <!-- Profile link - visible to everyone -->
+        <a href="profile.php" class="<?= ($currentPage == "profile.php") ? "active" : ""; ?>">
+            <i class="fas fa-user"></i> My Profile
+        </a>
+
+        <a href="logout.php" class="logout">
+            <i class="fas fa-right-from-bracket"></i> Logout
+        </a>
+    </div>
+
+</aside>
+
+<script>
+const sidebar = document.getElementById("sidebar");
+const overlay = document.getElementById("overlay");
+
+function toggleSidebar() {
+    sidebar.classList.toggle("show");
+    overlay.classList.toggle("show");
+}
+
+overlay.onclick = function() {
+    sidebar.classList.remove("show");
+    overlay.classList.remove("show");
+};
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        sidebar.classList.remove("show");
+        overlay.classList.remove("show");
+    }
+});
+</script>
+<!-- worked -->
