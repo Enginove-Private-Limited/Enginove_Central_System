@@ -1,0 +1,7 @@
+# Sensitive files 
+config/*.php 
+*.sql 
+*.log 
+/uploads/ 
+.DS_Store 
+Thumbs.db 
